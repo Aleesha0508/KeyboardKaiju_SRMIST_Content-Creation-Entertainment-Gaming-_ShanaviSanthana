@@ -1,0 +1,566 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+    color: white;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* Character Selection Screen */
+#characterSelection {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0a0a0a, #2d1b69, #11998e);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.selection-title {
+    font-size: 48px;
+    font-weight: bold;
+    color: #00ffff;
+    text-shadow: 0 0 20px #00ffff;
+    margin-bottom: 50px;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 20px #00ffff; }
+    to { text-shadow: 0 0 30px #00ffff, 0 0 40px #00ffff; }
+}
+
+.character-container {
+    display: flex;
+    gap: 100px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.character-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 3px solid #333;
+    border-radius: 20px;
+    padding: 30px;
+    width: 300px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.character-card:hover {
+    border-color: #00ffff;
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
+.character-card.selected {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 30px rgba(255, 107, 107, 0.7);
+    transform: scale(1.05);
+}
+
+.character-image {
+    width: 200px;
+    height: 250px;
+    background: linear-gradient(45deg, #222, #444);
+    border-radius: 15px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    position: relative;
+    border: 2px solid #555;
+}
+
+.character-card[data-character="hero"] .character-image {
+    background: linear-gradient(45deg, #1e3c72, #2a5298);
+    border-color: #00ffff;
+    color: #00ffff;
+}
+
+.character-card[data-character="villain"] .character-image {
+    background: linear-gradient(45deg, #8b0000, #ff4500);
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.character-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #00ffff;
+}
+
+.character-description {
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.4;
+    margin-bottom: 20px;
+}
+
+.character-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-label {
+    color: #888;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    color: #00ffff;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.start-button {
+    padding: 15px 40px;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.start-button:hover:not(:disabled) {
+    transform: scale(1.1);
+    box-shadow: 0 5px 20px rgba(255, 107, 107, 0.6);
+}
+
+.start-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #666;
+}
+
+/* Game Screen */
+#gameScreen {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: none;
+}
+
+#gameContainer {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameCanvas {
+    border: 3px solid #00ffff;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+    background: radial-gradient(circle at center, #111, #000);
+}
+
+/* UI Elements */
+#gameUI {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.health-container {
+    position: absolute;
+    top: 20px;
+    width: 300px;
+    pointer-events: auto;
+}
+
+#playerHealthContainer {
+    left: 20px;
+}
+
+#bossHealthContainer {
+    right: 20px;
+}
+
+.character-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.character-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid #00ffff;
+    margin-right: 15px;
+    background: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.character-details h3 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.character-details p {
+    font-size: 12px;
+    color: #ccc;
+}
+
+.health-bar {
+    width: 100%;
+    height: 25px;
+    border: 2px solid #fff;
+    background: rgba(0, 0, 0, 0.7);
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000 0%, #ffaa00 50%, #00ff00 100%);
+    transition: width 0.5s ease;
+    border-radius: 10px;
+}
+
+/* Combat Move Display */
+#combatMoves {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #00ffff;
+    text-align: center;
+    display: none;
+    pointer-events: auto;
+    max-width: 400px;
+    animation: movePopup 0.5s ease;
+}
+
+@keyframes movePopup {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.move-title {
+    font-size: 20px;
+    color: #ff6b6b;
+    margin-bottom: 10px;
+}
+
+.move-description {
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.4;
+}
+
+/* Dialogue System */
+#dialogueSystem {
+    position: absolute;
+    bottom: 150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 600px;
+    pointer-events: auto;
+}
+
+.dialogue-box {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #00ffff;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 10px;
+    display: none;
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dialogue-speaker {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ff6b6b;
+    margin-bottom: 8px;
+}
+
+.dialogue-text {
+    font-size: 16px;
+    line-height: 1.4;
+    color: #fff;
+}
+
+/* Controls */
+.controls {
+    position: absolute;
+    top: 120px;
+    left: 20px;
+    font-size: 12px;
+    opacity: 0.8;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.control-row {
+    margin-bottom: 3px;
+}
+
+/* AI Generation Indicator */
+.ai-thinking {
+    position: absolute;
+    top: 20px;
+    right: 50%;
+    transform: translateX(50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid #00ffff;
+    display: none;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+/* Judge Input */
+#judgeControls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    pointer-events: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#aiPromptInput {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00ffff;
+    color: white;
+    border-radius: 8px;
+    width: 350px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+}
+
+#aiPromptInput::placeholder {
+    color: #888;
+}
+
+.control-button {
+    padding: 12px 24px;
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.control-button:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+}
+
+.control-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #666;
+}
+
+/* Game Over Screen */
+#gameOverScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.game-over-title {
+    font-size: 48px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px currentColor;
+}
+
+.game-over-title.victory {
+    color: #00ff00;
+}
+
+.game-over-title.defeat {
+    color: #ff0000;
+}
+
+.game-over-message {
+    font-size: 18px;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #ccc;
+}
+
+.restart-button {
+    padding: 15px 30px;
+    background: linear-gradient(45deg, #00ffff, #0080ff);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.restart-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .character-container {
+        flex-direction: column;
+        gap: 50px;
+    }
+    #aiPromptInput {
+        width: 300px;
+    }
+    .selection-title {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 800px) {
+    #gameCanvas {
+        width: 90vw;
+        height: 60vh;
+    }
+    .health-container {
+        width: 250px;
+    }
+    #judgeControls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    #aiPromptInput {
+        width: 250px;
+    }
+}
+
+.character-card.selected {
+    border: 2px solid #00f;
+    box-shadow: 0 0 10px #00f;
+}.arena-characters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.arena-characters {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    gap: 100px; /* Space between players */
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.arena-character {
+    flex: 0 0 200px; /* Fixed width for each character block */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.arena-character .character-image {
+    width: 200px;   /* Match size to your .character-image */
+    height: 250px;
+    margin-bottom: 10px;
+}
+
+.character-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+
+.villain-stats .stat-label,
+.villain-stats .stat-value {
+    color: #ff6b6b;
+}
+
+.stat-label {
+    color: #888;
+    margin-bottom: 5px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.stat-value {
+    color: #00ffff;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+}

@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ra.One AI Arena - Character Battle</title>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            color: white;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #characterSelection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a, #2d1b69, #11998e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .selection-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 50px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00ffff; }
+            to { text-shadow: 0 0 30px #00ffff, 0 0 40px #00ffff; }
+        }
+
+        .character-container {
+            display: flex;
+            gap: 100px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .character-card {
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #333;
+            border-radius: 20px;
+            padding: 30px;
+            width: 300px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .character-card:hover {
+            border-color: #00ffff;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .character-card.selected {
+            border-color: #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.7);
+            transform: scale(1.05);
+        }
+
+        .character-image {
+            width: 200px;
+            height: 250px;
+            background: linear-gradient(45deg, #222, #444);
+            border-radius: 15px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+            position: relative;
+            border: 2px solid #555;
+        }
+
+        .character-card[data-character="hero"] .character-image {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+            border-color: #00ffff;
+            color: #00ffff;
+        }
+
+        .character-card[data-character="villain"] .character-image {
+            background: linear-gradient(45deg, #8b0000, #ff4500);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .character-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ffff;
+        }
+
+        .character-description {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.4;
+            margin-bottom: 20px;
+        }
+
+        .character-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #00ffff;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .start-button {
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .start-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .start-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #666;
+        }
+
+        #gameScreen {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            background: radial-gradient(circle at center, #111, #000);
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .health-container {
+            position: absolute;
+            top: 20px;
+            width: 300px;
+            pointer-events: auto;
+        }
+
+        #playerHealthContainer {
+            left: 20px;
+        }
+
+        #bossHealthContainer {
+            right: 20px;
+        }
+
+        .character-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .character-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #00ffff;
+            margin-right: 15px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .character-details h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .character-details p {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 25px;
+            border: 2px solid #fff;
+            background: rgba(0, 0, 0, 0.7);
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000 0%, #ffaa00 50%, #00ff00 100%);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        #combatMoves {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            text-align: center;
+            display: none;
+            pointer-events: auto;
+            max-width: 400px;
+            animation: movePopup 0.5s ease;
+        }
+
+        @keyframes movePopup {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .move-title {
+            font-size: 20px;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .move-description {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.4;
+        }
+
+        #dialogueSystem {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            pointer-events: auto;
+        }
+
+        .dialogue-box {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 10px;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dialogue-speaker {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 8px;
+        }
+
+        .dialogue-text {
+            font-size: 16px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .controls {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            font-size: 12px;
+            opacity: 0.8;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .control-row {
+            margin-bottom: 3px;
+        }
+
+        .ai-thinking {
+            position: absolute;
+            top: 20px;
+            right: 50%;
+            transform: translateX(50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #00ffff;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        #judgeControls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            pointer-events: auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #aiPromptInput {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            color: white;
+            border-radius: 8px;
+            width: 350px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        #aiPromptInput::placeholder {
+            color: #888;
+        }
+
+        .control-button {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .control-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #666;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .game-over-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        .game-over-title.victory {
+            color: #00ff00;
+        }
+
+        .game-over-title.defeat {
+            color: #ff0000;
+        }
+
+        .game-over-message {
+            font-size: 18px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #ccc;
+        }
+
+        .restart-button {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .restart-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+        }
+
+        @media (max-width: 1200px) {
+            .character-container {
+                flex-direction: column;
+                gap: 50px;
+            }
+            
+            #aiPromptInput {
+                width: 300px;
+            }
+            
+            .selection-title {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 800px) {
+            #gameCanvas {
+                width: 90vw;
+                height: 60vh;
+            }
+            
+            .health-container {
+                width: 250px;
+            }
+            
+            #judgeControls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            #aiPromptInput {
+                width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+     <div id="characterSelection">
+        <h1 class="selection-title">CHOOSE YOUR FIGHTER</h1>
+        
+        <div class="character-container">
+            <div class="character-card" data-character="hero">
+                 <div class="character-image">
+        <img src="assets/images/ra.one.png" alt="G.One" style="width: 100%; height: 100%; border-radius: 15px;">
+    </div>
+                <div class="character-name" style="color: #00ffff;">G.One</div>
+                <div class="character-description">
+                    The heroic AI protector, designed to safeguard humanity. Balanced fighter with strong defensive capabilities.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">SPEED</div>
+                        <div class="stat-value" style="color: #00ffff;">8</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">POWER</div>
+                        <div class="stat-value" style="color: #00ffff;">7</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">DEFENSE</div>
+                        <div class="stat-value" style="color: #00ffff;">9</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-card" data-character="villain">
+                <div class="character-image">
+                    <img src="assets/images/g.one.png" alt="Ra.One" style="width: 100%; height: 100%; border-radius: 15px;">
+                </div>
+                <div class="character-name" style="color: #ff1500;">Ra.One</div>
+                <div class="character-description">
+                    The malevolent AI seeking digital supremacy. Aggressive attacker with devastating special moves.
+                </div>
+                <div class="character-stats">
+                    <div class="stat">
+                        <div class="stat-label">SPEED</div>
+                        <div class="stat-value" style="color: #ff1500;">9</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">POWER</div>
+                        <div class="stat-value" style="color: #ff1500; ">10</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">DEFENSE</div>
+                        <div class="stat-value" style="color: #ff1500;">6</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="start-button" id="startGameButton" disabled>
+            SELECT A CHARACTER TO BEGIN
+        </button>
+    </div>
+
+    <div id="gameScreen">
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="1000" height="700"></canvas>
+            
+            <div id="gameUI">
+                <div id="playerHealthContainer" class="health-container">
+                    <div class="character-info">
+                        <div class="character-avatar" id="playerAvatar">P</div>
+                        <div class="character-details">
+                            <h3 id="playerName">Player</h3>
+                            <p id="playerRole">Hero</p>
+                        </div>
+                    </div>
+                    <div class="health-bar">
+                        <div class="health-fill" id="playerHealth" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div id="bossHealthContainer" class="health-container">
+                    <div class="character-info">
+                        <div class="character-avatar" id="bossAvatar">B</div>
+                        <div class="character-details">
+                            <h3 id="bossName">AI Opponent</h3>
+                            <p id="bossRole">Adaptive Enemy</p>
+                        </div>
+                    </div>
+                    <div class="health-bar">
+                        <div class="health-fill" id="bossHealth" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <div class="ai-thinking" id="aiThinking">AI Generating...</div>
+
+                <div id="combatMoves">
+                    <div class="move-title" id="moveTitle">Special Attack!</div>
+                    <div class="move-description" id="moveDescription">Executing combat maneuver...</div>
+                </div>
+
+                <div id="dialogueSystem">
+                    <div class="dialogue-box" id="playerDialogue">
+                        <div class="dialogue-speaker" id="playerSpeaker">G.One</div>
+                        <div class="dialogue-text" id="playerDialogueText">Ready for battle!</div>
+                    </div>
+                    <div class="dialogue-box" id="bossDialogue">
+                        <div class="dialogue-speaker" id="bossSpeaker">AI Opponent</div>
+                        <div class="dialogue-text" id="bossDialogueText">Prepare to be defeated!</div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="control-row"><strong>Controls:</strong></div>
+                    <div class="control-row">WASD / Arrows - Move</div>
+                    <div class="control-row">SPACE - Attack</div>
+                    <div class="control-row">SHIFT - Block</div>
+                    <div class="control-row">L - Change Level</div>
+                </div>
+
+                <div id="judgeControls">
+                    <input type="text" id="aiPromptInput" placeholder="AI: 'aggressive', 'ninja', 'defensive'" maxlength="150">
+                    <button class="control-button" id="applyAIBtn">Apply AI</button>
+                    <button class="control-button" id="aiCombatBtn">AI Move</button>
+                    <button class="control-button" id="changeLevelBtn">New Level</button>
+                    <button class="control-button" id="restartBtn">Restart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverScreen">
+        <div class="game-over-title" id="gameOverTitle">VICTORY!</div>
+        <div class="game-over-message" id="gameOverMessage">You have defeated your opponent!</div>
+        <button class="restart-button" id="restartGameBtn">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const GAME_CONFIG = {
+            width: 1000,
+            height: 700,
+            playerSpeed: 5,
+            bossSpeed: 3,
+            attackRange: 100,
+            maxHealth: 100,
+            aiThinkingDelay: 1500
+        };
+
+        const CHARACTERS = {
+            hero: {
+                name: "G.One",
+                role: "Digital Guardian",
+                color: '#00ffff',
+                speed: 5,
+                power: 7,
+                defense: 9,
+                dialogueStyle: "heroic",
+                combatStyle: "defensive"
+            },
+            villain: {
+                name: "Ra.One",
+                role: "Digital Destroyer",
+                color: '#ff6b6b',
+                speed: 6,
+                power: 10,
+                defense: 6,
+                dialogueStyle: "menacing",
+                combatStyle: "aggressive"
+            }
+        };
+
+        const LEVEL_THEMES = {
+            sunset: {
+                name: "Sunset City",
+                skyColors: ['#4A1A2C', '#8B2635', '#D2691E', '#FF8C00'],
+                buildingColors: ['#2C1810', '#3D2817', '#4A3520'],
+                groundColor: '#5A4A3A',
+                accentColor: '#FF6B35'
+            },
+            cyberpunk: {
+                name: "Neon Night",
+                skyColors: ['#0F0F23', '#1A1A3A', '#2D1B69', '#4C0080'],
+                buildingColors: ['#0A0A0A', '#1A1A1A', '#2A2A2A'],
+                groundColor: '#2D3748',
+                accentColor: '#00FFFF'
+            },
+            desert: {
+                name: "Desert Ruins",
+                skyColors: ['#8B4513', '#CD853F', '#F4A460', '#FFE4B5'],
+                buildingColors: ['#8B7355', '#A0522D', '#CD853F'],
+                groundColor: '#D2B48C',
+                accentColor: '#B8860B'
+            },
+            arctic: {
+                name: "Ice Fortress",
+                skyColors: ['#1E3A5F', '#4A90E2', '#87CEEB', '#B0E0E6'],
+                buildingColors: ['#2F4F4F', '#708090', '#B0C4DE'],
+                groundColor: '#E6F3FF',
+                accentColor: '#00CED1'
+            },
+            volcanic: {
+                name: "Lava Fields",
+                skyColors: ['#2F1B14', '#8B0000', '#FF4500', '#FF6347'],
+                buildingColors: ['#1A0A0A', '#4A1A1A', '#6A2A2A'],
+                groundColor: '#8B4513',
+                accentColor: '#FF1493'
+            }
+        };
+
+        let currentLevel = {
+            theme: 'sunset',
+            difficulty: 1,
+            platformCount: 3,
+            enemySpeed: 1,
+            specialEffects: []
+        };
+
+        let gameState = {
+            selectedCharacter: null,
+            gameActive: false,
+            aiGenerating: false,
+            currentAIPrompt: "",
+            lastAIAction: 0,
+            
+            player: {
+                x: 150,
+                y: 350,
+                width: 40,
+                height: 60,
+                health: GAME_CONFIG.maxHealth,
+                maxHealth: GAME_CONFIG.maxHealth,
+                character: null,
+                isAttacking: false,
+                isBlocking: false,
+                specialCooldown: 0,
+                lastMove: "idle",
+                attackAnimation: 0
+            },
+            
+            boss: {
+                x: 750,
+                y: 350,
+                width: 40,
+                height: 60,
+                health: GAME_CONFIG.maxHealth,
+                maxHealth: GAME_CONFIG.maxHealth,
+                aiPersonality: "adaptive",
+                isAttacking: false,
+                specialCooldown: 0,
+                behaviorPattern: "neutral",
+                aiGeneratedMoves: [],
+                currentMoveIndex: 0,
+                lastAction: 0,
+                attackAnimation: 0
+            },
+            
+            keys: {},
+            dialogueQueue: [],
+            combatMoves: [],
+            round: 1,
+            maxRounds: 3,
+            gameStartTime: 0
+        };
+
+        let selectedChar = null;
+        let skylineBuildings = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.character-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const character = this.getAttribute('data-character');
+                    selectCharacter(character);
+                });
+            });
+            
+            document.getElementById('startGameButton').addEventListener('click', startGame);
+            document.getElementById('applyAIBtn').addEventListener('click', applyAIPrompt);
+            document.getElementById('aiCombatBtn').addEventListener('click', generateAICombat);
+            document.getElementById('changeLevelBtn').addEventListener('click', generateRandomLevel);
+            document.getElementById('restartBtn').addEventListener('click', restartGame);
+            document.getElementById('restartGameBtn').addEventListener('click', restartGame);
+        });
+
+        function selectCharacter(character) {
+            document.querySelectorAll('.character-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            document.querySelector(`[data-character="${character}"]`).classList.add('selected');
+            selectedChar = character;
+            gameState.selectedCharacter = character;
+            
+            const startButton = document.getElementById('startGameButton');
+            startButton.textContent = `START BATTLE AS ${CHARACTERS[character].name.toUpperCase()}`;
+            startButton.disabled = false;
+        }
+
+        function startGame() {
+            if (!selectedChar) return;
+            
+            document.getElementById('characterSelection').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            initializeGame();
+        }
+
+        function restartGame() {
+            gameState.gameActive = false;
+            gameState.aiGenerating = false;
+            selectedChar = null;
+            
+            document.getElementById('characterSelection').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            document.querySelectorAll('.character-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            const startButton = document.getElementById('startGameButton');
+            startButton.textContent = 'SELECT A CHARACTER TO BEGIN';
+            startButton.disabled = true;
+        }
+
+        function initializeGame() {
+            const playerChar = CHARACTERS[selectedChar];
+            const enemyChar = selectedChar === 'hero' ? CHARACTERS.villain : CHARACTERS.hero;
+            
+            gameState.player.x = 150;
+            gameState.player.y = 350;
+            gameState.player.health = gameState.player.maxHealth;
+            gameState.player.isAttacking = false;
+            gameState.player.isBlocking = false;
+            gameState.player.attackAnimation = 0;
+            
+            gameState.boss.x = 750;
+            gameState.boss.y = 350;
+            gameState.boss.health = gameState.boss.maxHealth;
+            gameState.boss.isAttacking = false;
+            gameState.boss.lastAction = 0;
+            gameState.boss.attackAnimation = 0;
+            
+            gameState.player.character = playerChar;
+            gameState.boss.character = enemyChar;
+            gameState.gameStartTime = Date.now();
+            
+            updateCharacterUI();
+            updateHealthBars();
+            generateInitialAI();
+            generateSkyline();
+            generateRandomLevel();
+            
+            gameState.gameActive = true;
+            gameLoop();
+            
+            setupInputListeners();
+            
+            setTimeout(() => {
+                showDialogue('player', generateDialogue(playerChar.dialogueStyle, 'intro'));
+                setTimeout(() => {
+                    showDialogue('boss', generateDialogue(enemyChar.dialogueStyle, 'intro'));
+                }, 1500);
+            }, 1000);
+        }
+
+        function generateRandomLevel() {
+            const themes = Object.keys(LEVEL_THEMES);
+            const randomTheme = themes[Math.floor(Math.random() * themes.length)];
+            
+            currentLevel = {
+                theme: randomTheme,
+                difficulty: Math.floor(Math.random() * 5) + 1,
+                platformCount: Math.floor(Math.random() * 4) + 2,
+                enemySpeed: 0.5 + Math.random() * 2,
+                specialEffects: generateSpecialEffects()
+            };
+            
+            gameState.boss.character.speed = 3 + currentLevel.difficulty;
+            gameState.boss.character.power = 7 + currentLevel.difficulty;
+            
+            showDialogue('player', `Entering ${LEVEL_THEMES[randomTheme].name}! Difficulty: ${currentLevel.difficulty}`);
+            generateSkyline();
+        }
+
+        function generateSpecialEffects() {
+            const effects = [];
+            const effectTypes = ['particles', 'weather', 'lighting'];
+            
+            for (let i = 0; i < Math.random() * 3; i++) {
+                effects.push(effectTypes[Math.floor(Math.random() * effectTypes.length)]);
+            }
+            
+            return effects;
+        }
+
+        function updateCharacterUI() {
+            document.getElementById('playerName').textContent = gameState.player.character.name;
+            document.getElementById('playerRole').textContent = gameState.player.character.role;
+            document.getElementById('playerAvatar').textContent = gameState.player.character.name[0];
+            document.getElementById('playerAvatar').style.borderColor = gameState.player.character.color;
+            
+            document.getElementById('bossName').textContent = gameState.boss.character.name;
+            document.getElementById('bossRole').textContent = gameState.boss.character.role;
+            document.getElementById('bossAvatar').textContent = gameState.boss.character.name[0];
+            document.getElementById('bossAvatar').style.borderColor = gameState.boss.character.color;
+        }
+
+        function updateHealthBars() {
+            const playerHealthPercent = (gameState.player.health / gameState.player.maxHealth) * 100;
+            const bossHealthPercent = (gameState.boss.health / gameState.boss.maxHealth) * 100;
+            
+            document.getElementById('playerHealth').style.width = playerHealthPercent + '%';
+            document.getElementById('bossHealth').style.width = bossHealthPercent + '%';
+            
+            if (gameState.player.health <= 0) {
+                endGame(false);
+            } else if (gameState.boss.health <= 0) {
+                endGame(true);
+            }
+        }
+
+        function setupInputListeners() {
+            document.addEventListener('keydown', (e) => {
+                gameState.keys[e.key.toLowerCase()] = true;
+                
+                if (e.key === ' ' && !gameState.player.isAttacking) {
+                    playerAttack();
+                }
+                
+                if (e.key === 'Shift' && !gameState.player.isBlocking) {
+                    gameState.player.isBlocking = true;
+                }
+                
+                if (e.key.toLowerCase() === 'l') {
+                    generateRandomLevel();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                gameState.keys[e.key.toLowerCase()] = false;
+                
+                if (e.key === 'Shift') {
+                    gameState.player.isBlocking = false;
+                }
+            });
+        }
+
+        function gameLoop() {
+            if (!gameState.gameActive) return;
+            
+            updatePlayer();
+            updateBoss();
+            drawGame();
+            
+            if (gameState.player.specialCooldown > 0) gameState.player.specialCooldown--;
+            if (gameState.boss.specialCooldown > 0) gameState.boss.specialCooldown--;
+            if (gameState.player.attackAnimation > 0) gameState.player.attackAnimation--;
+            if (gameState.boss.attackAnimation > 0) gameState.boss.attackAnimation--;
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePlayer() {
+            const speed = gameState.player.character.speed;
+            
+            if (gameState.keys['w'] || gameState.keys['arrowup']) {
+                gameState.player.y = Math.max(100, gameState.player.y - speed);
+            }
+            if (gameState.keys['s'] || gameState.keys['arrowdown']) {
+                gameState.player.y = Math.min(GAME_CONFIG.height - 100, gameState.player.y + speed);
+            }
+            if (gameState.keys['a'] || gameState.keys['arrowleft']) {
+                gameState.player.x = Math.max(50, gameState.player.x - speed);
+            }
+            if (gameState.keys['d'] || gameState.keys['arrowright']) {
+                gameState.player.x = Math.min(GAME_CONFIG.width - 50, gameState.player.x + speed);
+            }
+        }
+
+        function updateBoss() {
+            if (gameState.aiGenerating) return;
+            
+            const now = Date.now();
+            if (now - gameState.boss.lastAction < 1000) return;
+            
+            const aiPersonality = gameState.boss.aiPersonality;
+            const distance = Math.hypot(
+                gameState.boss.x - gameState.player.x,
+                gameState.boss.y - gameState.player.y
+            );
+            
+            if (aiPersonality === 'aggressive' || gameState.boss.character.combatStyle === 'aggressive') {
+                if (distance > 150) {
+                    moveTowardsPlayer();
+                }
+                if (distance < 200 && !gameState.boss.isAttacking) {
+                    bossAttack();
+                }
+            } else if (aiPersonality === 'defensive') {
+                if (distance < 100) {
+                    moveAwayFromPlayer();
+                } else if (distance > 300) {
+                    moveTowardsPlayer();
+                }
+                if (distance > 150 && distance < 250 && !gameState.boss.isAttacking) {
+                    bossAttack();
+                }
+            } else if (aiPersonality === 'ninja') {
+                if (Math.random() > 0.95) {
+                    const angle = Math.random() * Math.PI * 2;
+                    gameState.boss.x += Math.cos(angle) * 50;
+                    gameState.boss.y += Math.sin(angle) * 50;
+                }
+                if (distance < 150 && Math.random() > 0.8 && !gameState.boss.isAttacking) {
+                    bossAttack();
+                }
+            } else {
+                if (distance > 200) {
+                    moveTowardsPlayer();
+                } else if (distance < 100) {
+                    moveAwayFromPlayer();
+                }
+                if (distance < 180 && Math.random() > 0.97 && !gameState.boss.isAttacking) {
+                    bossAttack();
+                }
+            }
+            
+            gameState.boss.x = Math.max(50, Math.min(GAME_CONFIG.width - 50, gameState.boss.x));
+            gameState.boss.y = Math.max(100, Math.min(GAME_CONFIG.height - 100, gameState.boss.y));
+        }
+
+        function moveTowardsPlayer() {
+            const dx = gameState.player.x - gameState.boss.x;
+            const dy = gameState.player.y - gameState.boss.y;
+            const distance = Math.hypot(dx, dy);
+            
+            if (distance > 0) {
+                const speed = gameState.boss.character.speed * currentLevel.enemySpeed;
+                gameState.boss.x += (dx / distance) * speed;
+                gameState.boss.y += (dy / distance) * speed;
+            }
+        }
+
+        function moveAwayFromPlayer() {
+            const dx = gameState.player.x - gameState.boss.x;
+            const dy = gameState.player.y - gameState.boss.y;
+            const distance = Math.hypot(dx, dy);
+            
+            if (distance > 0) {
+                const speed = gameState.boss.character.speed * currentLevel.enemySpeed;
+                gameState.boss.x -= (dx / distance) * speed;
+                gameState.boss.y -= (dy / distance) * speed;
+            }
+        }
+
+        function playerAttack() {
+            if (gameState.player.isAttacking) return;
+            
+            gameState.player.isAttacking = true;
+            gameState.player.attackAnimation = 10;
+            
+            const distance = Math.hypot(
+                gameState.boss.x - gameState.player.x,
+                gameState.boss.y - gameState.player.y
+            );
+            
+            if (distance < GAME_CONFIG.attackRange) {
+                const damage = gameState.player.character.power + Math.random() * 5;
+                gameState.boss.health = Math.max(0, gameState.boss.health - damage);
+                updateHealthBars();
+                
+                showCombatMove(`${gameState.player.character.name} Strike!`, `Dealt ${Math.floor(damage)} damage!`);
+                showDialogue('player', generateDialogue(gameState.player.character.dialogueStyle, 'attack'));
+            }
+            
+            setTimeout(() => {
+                gameState.player.isAttacking = false;
+            }, 300);
+        }
+
+        function bossAttack() {
+            if (gameState.boss.isAttacking) return;
+            
+            gameState.boss.isAttacking = true;
+            gameState.boss.attackAnimation = 10;
+            gameState.boss.lastAction = Date.now();
+            
+            const distance = Math.hypot(
+                gameState.boss.x - gameState.player.x,
+                gameState.boss.y - gameState.player.y
+            );
+            
+            if (distance < GAME_CONFIG.attackRange) {
+                let damage = gameState.boss.character.power + Math.random() * 5;
+                
+                if (gameState.player.isBlocking) {
+                    damage *= 0.3;
+                    showDialogue('player', 'Blocked!');
+                } else {
+                    showDialogue('boss', generateDialogue(gameState.boss.character.dialogueStyle, 'attack'));
+                }
+                
+                gameState.player.health = Math.max(0, gameState.player.health - damage);
+                updateHealthBars();
+                
+                showCombatMove(`${gameState.boss.character.name} Attack!`, `Dealt ${Math.floor(damage)} damage!`);
+            }
+            
+            setTimeout(() => {
+                gameState.boss.isAttacking = false;
+            }, 300);
+        }
+
+        function drawGame() {
+            const theme = LEVEL_THEMES[currentLevel.theme];
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CONFIG.height);
+            theme.skyColors.forEach((color, i) => {
+                gradient.addColorStop(i / (theme.skyColors.length - 1), color);
+            });
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, GAME_CONFIG.width, GAME_CONFIG.height);
+
+            ctx.fillStyle = theme.groundColor;
+            ctx.fillRect(0, GAME_CONFIG.height - 80, GAME_CONFIG.width, 80);
+
+            for (let i = 0; i < currentLevel.platformCount; i++) {
+                const x = (i + 1) * (GAME_CONFIG.width / (currentLevel.platformCount + 1));
+                const y = 300;
+                const width = 150;
+                const height = 20;
+
+                ctx.fillStyle = theme.buildingColors[i % theme.buildingColors.length];
+                ctx.fillRect(x - width / 2, y, width, height);
+
+                ctx.strokeStyle = theme.accentColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x - width / 2, y, width, height);
+            }
+
+            // Draw stable skyline (no generateSkyline() here!)
+            for (const building of skylineBuildings) {
+                ctx.fillStyle = building.color;
+                ctx.fillRect(building.x, building.y, building.width, building.height);
+
+                ctx.strokeStyle = theme.accentColor;
+                ctx.lineWidth = 1;
+                ctx.strokeRect(building.x, building.y, building.width, building.height);
+
+                // Optional: deterministic windows
+                for (let w = 0; w < Math.floor(building.width / 10); w++) {
+                    for (let h = 0; h < Math.floor(building.height / 25); h++) {
+                        if ((w + h) % 3 === 0) {
+                            ctx.fillStyle = theme.accentColor;
+                            ctx.fillRect(
+                                building.x + 5 + w * 10,
+                                building.y + 5 + h * 20,
+                                6, 12
+                            );
+                        }
+                    }
+                }
+            }
+            
+            drawCharacter(
+                gameState.player.x,
+                gameState.player.y,
+                gameState.player.width,
+                gameState.player.height,
+                gameState.player.character.color,
+                gameState.player.isAttacking,
+                gameState.player.isBlocking,
+                gameState.player.attackAnimation
+            );
+            
+            drawCharacter(
+                gameState.boss.x,
+                gameState.boss.y,
+                gameState.boss.width,
+                gameState.boss.height,
+                gameState.boss.character.color,
+                gameState.boss.isAttacking,
+                false,
+                gameState.boss.attackAnimation
+            );
+            
+            if (currentLevel.specialEffects.includes('particles')) {
+                drawParticles();
+            }
+        }
+
+        function drawCharacter(x, y, width, height, color, isAttacking, isBlocking, attackAnim) {
+            ctx.save();
+            
+            if (isBlocking) {
+                ctx.globalAlpha = 0.7;
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(x, y, width, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+            
+            const scale = attackAnim > 0 ? 1 + (attackAnim / 10) * 0.2 : 1;
+            const pixelSize = 3;
+            
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            
+            const isHero = color === '#00ffff';
+            
+            if (isHero) {
+                // G.One (Blue Hero) pixel art
+                const blueprint = [
+                    // Head (darker skin tone at top)
+                    [0,0,0,0,3,3,3,3,3,0,0,0],
+                    [0,0,3,3,3,3,3,3,3,3,0,0],
+                    [0,3,3,1,1,1,3,3,1,1,3,0],
+                    [3,3,1,1,5,5,1,1,5,5,3,3],
+                    [3,3,1,1,5,5,1,1,5,5,3,3],
+                    [3,3,3,1,1,1,1,1,1,1,3,3],
+                    [0,3,3,3,3,6,6,3,3,3,3,0],
+                    [0,0,3,3,3,3,3,3,3,3,0,0],
+                    // Body (blue suit)
+                    [0,0,0,2,2,2,2,2,2,0,0,0],
+                    [0,0,2,2,2,2,2,2,2,2,0,0],
+                    [0,2,2,4,4,2,2,4,4,2,2,0],
+                    [2,2,2,4,4,2,2,4,4,2,2,2],
+                    [2,2,2,2,2,4,4,2,2,2,2,2],
+                    [0,2,2,2,2,2,2,2,2,2,2,0],
+                    // Legs
+                    [0,0,2,2,2,0,0,2,2,2,0,0],
+                    [0,0,2,2,2,0,0,2,2,2,0,0],
+                    [0,0,2,2,2,0,0,2,2,2,0,0],
+                    [0,0,0,2,2,0,0,2,2,0,0,0]
+                ];
+                
+                const colors = {
+                    0: null,
+                    1: '#d4a574',      // skin
+                    2: '#1e5a8e',      // dark blue
+                    3: '#2a2a2a',      // hair
+                    4: '#00d4ff',      // bright cyan
+                    5: '#ffffff',      // eyes
+                    6: '#8b6f47'       // mouth
+                };
+                
+                drawPixelArt(blueprint, colors, pixelSize);
+            } else {
+                // Ra.One (Red Villain) pixel art
+                const blueprint = [
+                    // Head with red visor
+                    [0,0,0,0,3,3,3,3,3,0,0,0],
+                    [0,0,3,3,3,3,3,3,3,3,0,0],
+                    [0,3,3,1,1,4,4,4,1,1,3,0],
+                    [3,3,1,5,5,4,4,4,5,5,3,3],
+                    [3,3,1,5,5,0,0,0,5,5,3,3],
+                    [3,3,3,1,1,1,1,1,1,1,3,3],
+                    [0,3,3,3,6,6,6,6,3,3,3,0],
+                    [0,0,3,3,3,3,3,3,3,3,0,0],
+                    // Body (red and black suit with cape)
+                    [0,0,3,2,2,2,2,2,2,3,0,0],
+                    [0,3,3,2,2,2,2,2,2,3,3,0],
+                    [3,3,2,2,7,2,2,7,2,2,3,3],
+                    [3,2,2,2,7,2,2,7,2,2,2,3],
+                    [3,2,2,2,2,7,7,2,2,2,2,3],
+                    [0,3,2,2,2,2,2,2,2,2,3,0],
+                    // Legs
+                    [0,0,2,2,2,0,0,2,2,2,0,0],
+                    [0,0,2,2,2,0,0,2,2,2,0,0],
+                    [0,0,7,7,2,0,0,2,7,7,0,0],
+                    [0,0,0,7,7,0,0,7,7,0,0,0]
+                ];
+                
+                const colors = {
+                    0: null,
+                    1: '#d4a574',      // skin
+                    2: '#8b0000',      // dark red
+                    3: '#0a0a0a',      // black cape/suit
+                    4: '#ff3300',      // red visor
+                    5: '#ffffff',      // eyes
+                    6: '#8b6f47',      // mouth
+                    7: '#ff4444'       // bright red accents
+                };
+                
+                drawPixelArt(blueprint, colors, pixelSize);
+            }
+            
+            // Attack effect
+            if (attackAnim > 0) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(isAttacking ? 25 : -25, 0, 15 + attackAnim * 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+        }
+        
+        function drawPixelArt(blueprint, colors, pixelSize) {
+            const offsetX = -(blueprint[0].length * pixelSize) / 2;
+            const offsetY = -(blueprint.length * pixelSize) / 2;
+            
+            for (let row = 0; row < blueprint.length; row++) {
+                for (let col = 0; col < blueprint[row].length; col++) {
+                    const colorKey = blueprint[row][col];
+                    const color = colors[colorKey];
+                    
+                    if (color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(
+                            offsetX + col * pixelSize,
+                            offsetY + row * pixelSize,
+                            pixelSize,
+                            pixelSize
+                        );
+                    }
+                }
+            }
+        }
+
+        function drawParticles() {
+            const time = Date.now() * 0.001;
+            for (let i = 0; i < 20; i++) {
+                const x = (Math.sin(time + i) * 0.5 + 0.5) * GAME_CONFIG.width;
+                const y = (Math.cos(time * 0.7 + i * 0.5) * 0.5 + 0.5) * GAME_CONFIG.height;
+                
+                ctx.fillStyle = `rgba(0, 255, 255, ${0.3 + Math.sin(time + i) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function showDialogue(speaker, text) {
+            const dialogueBox = speaker === 'player' ? 
+                document.getElementById('playerDialogue') : 
+                document.getElementById('bossDialogue');
+            
+            const textElement = speaker === 'player' ? 
+                document.getElementById('playerDialogueText') : 
+                document.getElementById('bossDialogueText');
+            
+            textElement.textContent = text;
+            dialogueBox.style.display = 'block';
+            
+            setTimeout(() => {
+                dialogueBox.style.display = 'none';
+            }, 3000);
+        }
+
+        function showCombatMove(title, description) {
+            document.getElementById('moveTitle').textContent = title;
+            document.getElementById('moveDescription').textContent = description;
+            document.getElementById('combatMoves').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('combatMoves').style.display = 'none';
+            }, 2000);
+        }
+
+        function generateDialogue(style, context) {
+            const dialogues = {
+                heroic: {
+                    intro: ["Justice will prevail!", "Ready to protect!", "For humanity!"],
+                    attack: ["Take this!", "Digital justice!", "Protect mode engaged!"],
+                    victory: ["Good prevails!", "Mission accomplished!", "Humanity is safe!"],
+                    defeat: ["I won't give up...", "Regroup and retry!", "Not over yet!"]
+                },
+                menacing: {
+                    intro: ["Prepare for deletion!", "Your end approaches!", "Resistance is futile!"],
+                    attack: ["Feel my power!", "Delete!", "You're obsolete!"],
+                    victory: ["Superior processing!", "Inevitable outcome!", "Digital supremacy!"],
+                    defeat: ["Impossible...", "Recalculating...", "System error..."]
+                }
+            };
+            
+            const options = dialogues[style][context];
+            return options[Math.floor(Math.random() * options.length)];
+        }
+
+        function applyAIPrompt() {
+            const prompt = document.getElementById('aiPromptInput').value.trim().toLowerCase();
+            if (!prompt) return;
+            
+            gameState.currentAIPrompt = prompt;
+            
+            if (prompt.includes('aggressive') || prompt.includes('attack')) {
+                gameState.boss.aiPersonality = 'aggressive';
+                showDialogue('boss', 'Switching to aggressive mode!');
+            } else if (prompt.includes('defensive') || prompt.includes('defend')) {
+                gameState.boss.aiPersonality = 'defensive';
+                showDialogue('boss', 'Activating defensive protocols!');
+            } else if (prompt.includes('ninja') || prompt.includes('fast') || prompt.includes('quick')) {
+                gameState.boss.aiPersonality = 'ninja';
+                showDialogue('boss', 'Ninja mode engaged!');
+            } else {
+                gameState.boss.aiPersonality = 'adaptive';
+                showDialogue('boss', 'AI adapting to new strategy...');
+            }
+            
+            document.getElementById('aiPromptInput').value = '';
+        }
+
+        function generateAICombat() {
+            if (gameState.aiGenerating) return;
+            
+            gameState.aiGenerating = true;
+            document.getElementById('aiThinking').style.display = 'block';
+            
+            setTimeout(() => {
+                const aiMoves = [
+                    { name: 'Quantum Strike', damage: 15, description: 'A powerful energy blast!' },
+                    { name: 'Digital Sweep', damage: 10, description: 'Fast sweeping attack!' },
+                    { name: 'System Overload', damage: 20, description: 'Devastating special move!' },
+                    { name: 'Code Injection', damage: 12, description: 'Corrupting attack!' },
+                    { name: 'Neural Surge', damage: 18, description: 'Mind-bending assault!' }
+                ];
+                
+                const selectedMove = aiMoves[Math.floor(Math.random() * aiMoves.length)];
+                
+                const distance = Math.hypot(
+                    gameState.boss.x - gameState.player.x,
+                    gameState.boss.y - gameState.player.y
+                );
+                
+                if (distance < 200) {
+                    let damage = selectedMove.damage;
+                    if (gameState.player.isBlocking) {
+                        damage *= 0.3;
+                    }
+                    gameState.player.health = Math.max(0, gameState.player.health - damage);
+                    updateHealthBars();
+                }
+                
+                showCombatMove(selectedMove.name, selectedMove.description);
+                showDialogue('boss', `Executing ${selectedMove.name}!`);
+                
+                gameState.boss.attackAnimation = 10;
+                
+                document.getElementById('aiThinking').style.display = 'none';
+                gameState.aiGenerating = false;
+            }, GAME_CONFIG.aiThinkingDelay);
+        }
+
+        function generateInitialAI() {
+            const personalities = ['aggressive', 'defensive', 'ninja', 'adaptive'];
+            gameState.boss.aiPersonality = personalities[Math.floor(Math.random() * personalities.length)];
+        }
+
+        function endGame(playerWon) {
+            gameState.gameActive = false;
+            
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            const gameOverTitle = document.getElementById('gameOverTitle');
+            const gameOverMessage = document.getElementById('gameOverMessage');
+            
+            if (playerWon) {
+                gameOverTitle.textContent = 'VICTORY!';
+                gameOverTitle.className = 'game-over-title victory';
+                gameOverMessage.textContent = `${gameState.player.character.name} has defeated ${gameState.boss.character.name}! The digital realm is safe!`;
+            } else {
+                gameOverTitle.textContent = 'DEFEAT';
+                gameOverTitle.className = 'game-over-title defeat';
+                gameOverMessage.textContent = `${gameState.boss.character.name} has prevailed! Try again to master your skills!`;
+            }
+            
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function generateSkyline() {
+            const skylineBuildingCount = 25;
+            const theme = LEVEL_THEMES[currentLevel.theme];
+            skylineBuildings = [];
+            let x = 0;
+            for (let i = 0; i < skylineBuildingCount; i++) {
+                const buildingWidth = 25 + Math.floor(Math.random() * 35);
+                const buildingHeight = 80 + Math.floor(Math.random() * 180);
+                skylineBuildings.push({
+                    x: x,
+                    y: GAME_CONFIG.height - 80 - buildingHeight,
+                    width: buildingWidth,
+                    height: buildingHeight,
+                    color: theme.buildingColors[i % theme.buildingColors.length]
+                });
+                x += buildingWidth; 
+                if (x > GAME_CONFIG.width) break;
+            }
+        }
+    </script>
+</body>
+</html>
